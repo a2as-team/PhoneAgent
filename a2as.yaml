@@ -1,0 +1,412 @@
+manifest:
+  version: "0.1.3"
+  schema: https://a2as.org/cert/schema
+  subject:
+    name: cascoopman/phoneagent
+    source: https://github.com/cascoopman/phoneagent
+    branch: main
+    commit: "15537e52"
+    scope: [phone_agent/agent.py, phone_agent/tools/loop.py, phone_agent/tools/navigation.py, phone_agent/tools/vision.py]
+  issued:
+    by: A2AS.org
+    at: '2026-02-11T16:55:18Z'
+    url: https://a2as.org/certified/agents/cascoopman/phoneagent
+  signatures:
+    digest: sha256:r_jaAXNQ5_6FLh1cQprOMHpql82hk2oU7BvbGtkeFLI
+    key: ed25519:oFk0FlyDzA6oIsmmlsI_IlwhUEfXBxcIvUhg9xcG_10
+    sig: ed25519:rhnuaG0Iu1FiGEQxCpJ4IQK1y0q3kzNkitG18r12L1Whgwai82z29d4tCtX3ybNl--tQ3ysWCAz2CHvU3y4JBg
+
+agents:
+  phone_agent:
+    type: instance
+    models: [GEMINI_PRO_MODEL]
+    tools: [home_screen, move_pointer, click_pointer, scroll_screen, enter_keys, take_screenshot, locate_UI_elements, pause_loop,
+      human_intervention]
+    params:
+      name: iphone_agent
+      instruction: PROMPT_TEXT
+      before_model_callback: _load_screenshot
+  root_agent:
+    type: instance
+    params:
+      name: loop_agent
+      sub_agents: [phone_agent]
+
+models:
+  GEMINI_PRO_MODEL:
+    type: literal
+    agents: [phone_agent]
+
+tools:
+  click_pointer:
+    type: function
+    agents: [phone_agent]
+    params:
+      description: |-
+        Performs a click action at the current touch pointer location. Ensure the
+        pointer is correctly positioned using `move_pointer` before calling this.
+        This tool does not accept any coordinates as input.
+        Always verify the result using the `take_screenshot` tool.
+
+        Args:
+            explanation (str): One sentence explanation as to why this tool is being used, and how it contributes to the goal.
+
+        Returns:
+            dict: The outcome of the click process.
+  enter_keys:
+    type: function
+    agents: [phone_agent]
+    params:
+      description: |-
+        Enters the specified text into the currently focused text input field.
+        This tool is only able to enter default characters found on a physical QWERTY keyboard.
+        It does not support special characters or emojis.
+        Ensure a text field is selected before calling this. For sensitive
+        information like passwords, confirm with the USER first if not explicitly
+        permitted.
+
+        Args:
+            explanation (str): One sentence explanation as to why this tool is being used, and how it contributes to the goal.
+            text (str): The text sequence to enter.
+
+        Returns:
+            dict: The outcome of the key entry process.
+  home_screen:
+    type: function
+    agents: [phone_agent]
+    params:
+      description: |-
+        Navigates the iPhone back to the home screen. Equivalent to the primary home
+        gesture (swipe up from bottom or home button press). Use this to establish a
+        known starting state.
+
+        Args:
+            explanation (str): One sentence explanation as to why this tool is being used, and how it contributes to the goal.
+
+        Returns:
+            dict: The outcome of clicking the home button.
+  human_intervention:
+    type: function
+    agents: [phone_agent]
+    params:
+      description: |-
+        Interrupts the autonomous loop to allow for USER input and intervention.
+        Call this *immediately* if you need USER input, have encountered an error twice,
+        or when your task is complete.
+
+        Args:
+            explanation (str): One sentence explanation as to why this tool is being used, and how it contributes to the goal.
+  locate_UI_elements:
+    type: function
+    agents: [phone_agent]
+    params:
+      description: |-
+        Analyzes the latest screenshot to locate specific UI elements described by
+        the query. Returns a list of found elements, including their center coordinates
+        (x, y). Essential *before* using `move_pointer`. Be specific in your query.
+
+        Args:
+            explanation (str): One sentence explanation as to why this tool is being used, and how it contributes to the goal.
+            query (str): A natural language description of the UI element(s) to
+              locate (e.g., 'the settings icon', 'the text field labeled username',
+              'button containing Send').
+
+        Returns:
+            dict: The outcome of the object location process.
+  move_pointer:
+    type: function
+    agents: [phone_agent]
+    params:
+      description: |-
+        Moves the touch pointer to a specific coordinate (x, y) on the screen.
+        Coordinates must be obtained first using the `locate_UI_elements` tool.
+        After locating the element, use this tool to move the pointer to the element.
+        Do not guess coordinates.
+        Always verify the result using the `take_screenshot` tool.
+
+        Args:
+            explanation (str): One sentence explanation as to why this tool is being used, and how it contributes to the goal.
+            x (int): The target x-coordinate for the pointer.
+            y (int): The target y-coordinate for the pointer.
+
+        Returns:
+            dict: The outcome of the move pointer process.
+  pause_loop:
+    type: function
+    agents: [phone_agent]
+    params:
+      description: |-
+        Pauses your current task for a specified duration before resuming.
+        Use this to wait for a specific event to occur before resuming your task
+        without user intervention.
+
+        Args:
+            explanation (str): One sentence explanation as to why this tool is being used, and how it contributes to the goal.
+            duration (int): The duration to pause the task in seconds.
+
+        Returns:
+            dict: The outcome of the pause.
+  scroll_screen:
+    type: function
+    agents: [phone_agent]
+    params:
+      description: |-
+        Scrolls the screen content in a specified direction (up, down, left, right).
+        Use this to reveal elements that are currently off-screen.
+        Always verify the result using the `take_screenshot` tool.
+
+        Args:
+            explanation (str): One sentence explanation as to why this tool is being used, and how it contributes to the goal.
+            direction (str): The direction to swipe. The direction must be "left", "right", "up", or "down".
+
+        Returns:
+            dict: The outcome of the swipe process.
+  take_screenshot:
+    type: function
+    agents: [phone_agent]
+    params:
+      description: |-
+        Captures a screenshot of the current iPhone screen and returns it as image
+        data. This is crucial for verifying the current UI state before planning
+        actions.
+
+        Args:
+            explanation (str): One sentence explanation as to why this tool is being used, and how it contributes to the goal.
+
+        Returns:
+            dict: The outcome of the screenshot process.
+
+teams:
+  root_agent:
+    type: loop
+    agents: [root_agent, phone_agent]
+
+imports:
+  _load_screenshot: phone_agent.tools.vision._load_screenshot
+  agent: agent
+  Agent: google.adk.agents.Agent
+  asyncio: asyncio
+  BytesIO: io.BytesIO
+  CallbackContext: google.adk.agents.callback_context.CallbackContext
+  click_pointer: phone_agent.tools.navigation.click_pointer
+  enter_keys: phone_agent.tools.navigation.enter_keys
+  genai: google.genai
+  home_screen: phone_agent.tools.navigation.home_screen
+  human_intervention: phone_agent.tools.loop.human_intervention
+  Image: PIL.Image
+  ImageColor: PIL.ImageColor
+  ImageDraw: PIL.ImageDraw
+  io: io
+  jinja2: jinja2
+  json: json
+  LlmRequest: google.adk.models.LlmRequest
+  LlmResponse: google.adk.models.LlmResponse
+  load_dotenv: dotenv.load_dotenv
+  locate_UI_elements: phone_agent.tools.vision.locate_UI_elements
+  LoopAgent: google.adk.agents.LoopAgent
+  move_pointer: phone_agent.tools.navigation.move_pointer
+  Optional: typing.Optional
+  os: os
+  pause_loop: phone_agent.tools.loop.pause_loop
+  pyautogui: pyautogui
+  scroll_screen: phone_agent.tools.navigation.scroll_screen
+  subprocess: subprocess
+  take_screenshot: phone_agent.tools.vision.take_screenshot
+  time: time
+  ToolContext: google.adk.tools.ToolContext
+  types: google.genai.types
+
+functions:
+  _center_mouse:
+    type: sync
+    module: phone_agent.tools.navigation
+    params:
+      returns: dict
+  _hscroll_screen:
+    type: sync
+    module: phone_agent.tools.navigation
+    args: [direction]
+    params:
+      returns: dict
+  _load_screenshot:
+    type: sync
+    module: phone_agent.tools.vision
+    args: [callback_context, llm_request]
+    params:
+      returns: Optional[LlmResponse]
+  _scroll_down:
+    type: sync
+    module: phone_agent.tools.navigation
+    params:
+      returns: dict
+  _scroll_left:
+    type: sync
+    module: phone_agent.tools.navigation
+    params:
+      returns: dict
+  _scroll_right:
+    type: sync
+    module: phone_agent.tools.navigation
+    params:
+      returns: dict
+  _scroll_up:
+    type: sync
+    module: phone_agent.tools.navigation
+    params:
+      returns: dict
+  _vscroll_screen:
+    type: sync
+    module: phone_agent.tools.navigation
+    args: [direction]
+    params:
+      returns: dict
+  click_pointer:
+    type: sync
+    module: phone_agent.tools.navigation
+    args: [explanation]
+    params:
+      returns: dict
+  convert_coordinates:
+    type: sync
+    module: phone_agent.tools.vision
+    args: [bounding_boxes]
+    params:
+      returns: list[dict]
+  enter_keys:
+    type: sync
+    module: phone_agent.tools.navigation
+    args: [explanation, text]
+    params:
+      returns: dict
+  gemini_spatial_understanding:
+    type: sync
+    module: phone_agent.tools.vision
+    args: [image, query]
+    params:
+      returns: list[dict]
+  get_instructions:
+    type: sync
+    module: phone_agent.tools.vision
+    params:
+      returns: str
+  home_screen:
+    type: sync
+    module: phone_agent.tools.navigation
+    args: [explanation]
+    params:
+      returns: dict
+  human_intervention:
+    type: sync
+    module: phone_agent.tools.loop
+    args: [explanation, tool_context]
+  locate_UI_elements:
+    type: sync
+    module: phone_agent.tools.vision
+    args: [explanation, query]
+    params:
+      returns: dict
+  move_pointer:
+    type: sync
+    module: phone_agent.tools.navigation
+    args: [explanation, x, y]
+    params:
+      returns: dict
+  parse_json:
+    type: sync
+    module: phone_agent.tools.vision
+    args: [json_output]
+  pause_loop:
+    type: async
+    module: phone_agent.tools.loop
+    args: [explanation, duration]
+    params:
+      returns: dict
+  plot_bounding_boxes:
+    type: sync
+    module: phone_agent.tools.vision
+    args: [im, bounding_boxes]
+  scroll_screen:
+    type: sync
+    module: phone_agent.tools.navigation
+    args: [explanation, direction]
+    params:
+      returns: dict
+  take_screenshot:
+    type: sync
+    module: phone_agent.tools.vision
+    args: [explanation]
+    params:
+      returns: dict
+
+variables:
+  CONVERSION_HEIGHT:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.vision]
+  CONVERSION_WIDTH:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.vision]
+  GEMINI_PRO_MODEL:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.vision]
+  HOME_BUTTON_X:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.navigation]
+  HOME_BUTTON_Y:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.navigation]
+  IMAGE_CROP_BOX:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.vision]
+  MIRRORING_X_BOUND:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.navigation, phone_agent.tools.vision]
+  MIRRORING_Y_BOUND:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.navigation, phone_agent.tools.vision]
+  PHONE_PASSWORD:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.agent]
+  SCREEN_Y_INVERSION:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.navigation, phone_agent.tools.vision]
+  SCREENSHOT_LOCATION:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [phone_agent.tools.vision]
+
+files:
+  screenshot_path:
+    type: variable
+    actions: [read, delete]
+    params:
+      caller: [os.path.exists, os.remove, Image.open, pil_cropped_img.save]
+
+processes:
+  screencapture:
+    type: shell
+    actions: [exec]
+    args: [[-C, screenshot_path]]
+    params:
+      caller: [subprocess.run]
+      shell: ["False"]
